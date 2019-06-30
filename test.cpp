@@ -71,8 +71,8 @@ int main() {
         ss << "012345674444234567890";
         const std::string expected_bytes = ss.str();
 
-        std::vector<std::byte> resulting_bytes(mrt::istreambyte_iterator{ss},
-            mrt::istreambyte_iterator{});
+        std::vector<std::byte> resulting_bytes(mrt::istreambyte_iterator<>{ss},
+            mrt::istreambyte_iterator<>{});
         
         auto are_equals = std::equal(
             std::begin(expected_bytes), std::end(expected_bytes),

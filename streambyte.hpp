@@ -27,14 +27,19 @@
 #include <istream>
 #include <iterator>
 #include <streambuf>
-#include <thread>
 #include <vector>
+
+#ifdef _MSC_VER
+#define MRT_HARDWARE_CI_SIZE std::hardware_constructive_interference_size
+#else
+#define MRT_HARDWARE_CI_SIZE 64
+#endif
 
 namespace mrt {
 
 // Iterator for byte reading from istream.
 // Optimized to read by blocks.
-template <std::size_t buf_size = std::hardware_constructive_interference_size>
+template <std::size_t buf_size = MRT_HARDWARE_CI_SIZE>
 class istreambyte_iterator {
 public:
     using byte_type = std::byte;
@@ -93,7 +98,7 @@ public:
     }
 
     istreambyte_iterator(const istreambyte_proxy& proxy) noexcept
-        : m_to_read{proxy.m_to_read}, m_value_valid{proxy.m_streambuf == nullptr}, m_streambuf{proxy.m_streambuf}
+        : m_value_valid{proxy.m_streambuf == nullptr}, m_to_read{proxy.m_to_read}, m_buf_pos{proxy.m_buf_pos}, m_streambuf{proxy.m_streambuf}
     { }
 
 public:
@@ -162,7 +167,7 @@ private:
     }
 
     void _increment() {	
-        if (m_streambuf == nullptr && m_to_read == 0 || traits_type::eq_int_type(traits_type::eof(), _bump())) {
+        if ( (m_streambuf == nullptr && m_to_read == 0) || traits_type::eq_int_type(traits_type::eof(), _bump())) {
             m_streambuf = nullptr;
             m_value_valid = true;
         } else {
@@ -171,7 +176,7 @@ private:
     }
 
     void _peek() const noexcept {
-        if (m_streambuf == nullptr && m_to_read == 0 || traits_type::eq_int_type(traits_type::eof(), _current())) {
+        if ( (m_streambuf == nullptr && m_to_read == 0) || traits_type::eq_int_type(traits_type::eof(), _current())) {
             m_streambuf = nullptr;
         }
         
@@ -196,14 +201,14 @@ private:
 };
 
 template<std::size_t buf_size>
-[[nodsicard]] inline
+inline
 bool operator==(const istreambyte_iterator<buf_size>& lhs, const istreambyte_iterator<buf_size>& lrs) noexcept
 {
     return lhs.equal(lrs);
 }
 
 template<std::size_t buf_size>
-[[nodsicard]] inline
+inline
 bool operator!=(const istreambyte_iterator<buf_size>& lhs, const istreambyte_iterator<buf_size>& lrs) noexcept
 {
     return !lhs.equal(lrs);
@@ -211,7 +216,7 @@ bool operator!=(const istreambyte_iterator<buf_size>& lhs, const istreambyte_ite
 
 // Outbut streambyte iterator to write to a streambuf. 
 // Uses an internal buffer and flushes only when full or on object deallocation
-template<std::size_t buf_size = std::hardware_constructive_interference_size>
+template<std::size_t buf_size = MRT_HARDWARE_CI_SIZE>
 class ostreambyte_iterator {
 public:
 	using iterator_category = std::output_iterator_tag;
@@ -231,7 +236,7 @@ private:
 
 public:
 	ostreambyte_iterator(streambuf_type* streambuf) noexcept
-        : m_failure{false}, m_streambuf{streambuf}
+        : m_failure{false}, m_streambuf{streambuf}, m_buf{}
     { 
         m_buf.reserve(buf_size);
     }
@@ -241,7 +246,7 @@ public:
     { }
 
     ostreambyte_iterator(const ostreambyte_iterator& rhs)
-        : m_failure{rhs.m_failure}, m_buf{}, m_streambuf{rhs.m_streambuf}
+        : m_failure{rhs.m_failure}, m_streambuf{rhs.m_streambuf}, m_buf{}
     {
         m_buf.reserve(buf_size);
         const_cast<ostreambyte_iterator&>(rhs)._commit();
