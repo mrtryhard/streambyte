@@ -219,30 +219,30 @@ bool operator!=(const istreambyte_iterator<buf_size>& lhs, const istreambyte_ite
 template<std::size_t buf_size = MRT_HARDWARE_CI_SIZE>
 class ostreambyte_iterator {
 public:
-	using iterator_category = std::output_iterator_tag;
-	using value_type = void;
-	using difference_type = void;
-	using pointer = void;
-	using reference = void;
+    using iterator_category = std::output_iterator_tag;
+    using value_type = void;
+    using difference_type = void;
+    using pointer = void;
+    using reference = void;
 
-	using char_type = char;
-	using traits_type = std::char_traits<char_type>;
-	using streambuf_type = std::basic_streambuf<char_type, traits_type>;
-	using ostream_type = std::basic_ostream<char_type, traits_type>;
+    using char_type = char;
+    using traits_type = std::char_traits<char_type>;
+    using streambuf_type = std::basic_streambuf<char_type, traits_type>;
+    using ostream_type = std::basic_ostream<char_type, traits_type>;
 
 private:
     using byte_type = std::byte;
     using array_type = std::vector<char_type>;
 
 public:
-	ostreambyte_iterator(streambuf_type* streambuf) noexcept
+    ostreambyte_iterator(streambuf_type* streambuf) noexcept
         : m_failure{false}, m_streambuf{streambuf}, m_buf{}
     { 
         m_buf.reserve(buf_size);
     }
 
-	ostreambyte_iterator(ostream_type& stream) noexcept
-		: ostreambyte_iterator{stream.rdbuf()}
+    ostreambyte_iterator(ostream_type& stream) noexcept
+        : ostreambyte_iterator{stream.rdbuf()}
     { }
 
     ostreambyte_iterator(const ostreambyte_iterator& rhs)
@@ -257,31 +257,31 @@ public:
         _commit();
     }
 
-	ostreambyte_iterator& operator=(byte_type rhs) {
-		if (m_streambuf == nullptr || traits_type::eq_int_type(traits_type::eof(), _put(static_cast<char_type>(rhs)))) {
-			m_failure = true;
+    ostreambyte_iterator& operator=(byte_type rhs) {
+        if (m_streambuf == nullptr || traits_type::eq_int_type(traits_type::eof(), _put(static_cast<char_type>(rhs)))) {
+            m_failure = true;
         }
 
-		return *this;
-	}
+        return *this;
+    }
 
-	[[nodiscard]]
+    [[nodiscard]]
     ostreambyte_iterator& operator*() noexcept {
-		return *this;
-	}
+        return *this;
+    }
 
-	ostreambyte_iterator& operator++() noexcept {
-		return *this;
-	}
+    ostreambyte_iterator& operator++() noexcept {
+        return *this;
+    }
 
-	ostreambyte_iterator& operator++(int) noexcept {
-		return *this;
-	}
+    ostreambyte_iterator& operator++(int) noexcept {
+        return *this;
+    }
 
-	[[nodiscard]] constexpr
+    [[nodiscard]] constexpr
     bool failed() const noexcept {
-		return m_failure;
-	}
+        return m_failure;
+    }
 
 private:
     bool _commit() {
@@ -307,8 +307,8 @@ private:
     }
 
 private:
-	bool m_failure;
-	streambuf_type* m_streambuf;
+    bool m_failure;
+    streambuf_type* m_streambuf;
     array_type m_buf;
 };
 
