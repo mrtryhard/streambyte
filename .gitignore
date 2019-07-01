@@ -1,0 +1,4 @@
+*.testfile
+a.out
+benchmark_clang
+benchmark_gcc

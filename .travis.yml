@@ -18,10 +18,10 @@ install:
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
 
 script: 
-  - g++ test.cpp -pedantic -Wall -Wextra -std=c++17 -o streambyte_gcc.out
+  - g++ test.cpp -pedantic -Wall -Wextra -std=c++17 -O2 -o streambyte_gcc.out
   - echo "Test gcc" 
   - ./streambyte_gcc.out
-  - clang++ test.cpp -Wall -Wextra -std=c++17 -pedantic -o streambyte_clang.out
+  - clang++ test.cpp -Wall -Wextra -std=c++17 -O2 -pedantic -o streambyte_clang.out
   - echo "Test clang"
   - ./streambyte_clang.out
   
