@@ -55,7 +55,7 @@ public:
     using istream_type = std::basic_istream<int_type, traits_type>;
 
 private:
-    using buf_pos_type = std::uint8_t;
+    using buf_pos_type = std::size_t;
     using array_type = std::array<int_type, buf_size>;
 
 private:
@@ -285,11 +285,7 @@ public:
 
 private:
     bool _commit() {
-        if (!m_buf.empty()) {
-            return m_streambuf->sputn(m_buf.data(), m_buf.size()) == static_cast<std::streamsize>(m_buf.size());
-        } else {
-            return true;
-        }
+        return m_buf.empty() || m_streambuf->sputn(m_buf.data(), m_buf.size()) == static_cast<std::streamsize>(m_buf.size());
     }
 
     char_type _put(char_type c) {

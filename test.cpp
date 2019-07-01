@@ -22,11 +22,14 @@
 #include "streambyte.hpp"
  
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
+#include <iostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
+
+static int g_final_result = 0;
 
 constexpr const auto MAX_BYTES = 50;
 
@@ -41,9 +44,32 @@ std::vector<std::byte> get_expected() {
     return expected_bytes;
 }
 
+static
+void expect(bool expression, std::string_view error_msg, int line = __LINE__) {
+    if (!expression) {
+        std::cerr << "Failure at line " << line << ":\r\n\t" << error_msg << std::endl;
+        ++g_final_result;
+    }
+}
+
+static
+auto status() {
+    if (g_final_result == 0) {
+        std::cout << "success";
+    } else {
+        std::cout << "failure";
+    }
+
+    std::cout << std::endl;
+}
+
+// This tests the integrity of the iterators.
 int main() {
+    std::cout << "Starting testing..." << std::endl;
+
     // Case 1: ostreambyte_iterator
     {
+        std::cout << "ostreambyte_iterator ";
         const std::vector<std::byte> expected_bytes = get_expected();
 
         std::stringstream stream;
@@ -61,12 +87,15 @@ int main() {
             }
         );
 
-        assert(resulting_bytes.size() == MAX_BYTES && "ostreambyte_iterator: Expected result do not match length.");
-        assert(are_equals && "ostreambyte_iterator: Expected results mismatch.");
+        expect(resulting_bytes.size() == MAX_BYTES, "ostreambyte_iterator: Expected result do not match length.");
+        expect(are_equals, "ostreambyte_iterator: Expected results mismatch.");
+
+        status();
     }
 
     // Case 2: istreambyte_iterator
     {
+        std::cout << "istreambyte_iterator ";
         std::stringstream ss;
         ss << "012345674444234567890";
         const std::string expected_bytes = ss.str();
@@ -82,9 +111,11 @@ int main() {
             }
         );
 
-        assert(resulting_bytes.size() == expected_bytes.size() && "istreambyte_iterator: Expected result do not match length.");
-        assert(are_equals && "istreambyte_iterator: Expected results mismatch.");
+        expect(resulting_bytes.size() == expected_bytes.size(), "istreambyte_iterator: Expected result do not match length.");
+        expect(are_equals, "istreambyte_iterator: Expected results mismatch.");
+
+        status();
     }
 
-    return 0;
+    return g_final_result == 0 ? 0 : -g_final_result;
 }
