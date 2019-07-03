@@ -27,7 +27,6 @@
 #include <istream>
 #include <iterator>
 #include <streambuf>
-#include <vector>
 
 #ifdef _MSC_VER
 #define MRT_HARDWARE_CI_SIZE std::hardware_constructive_interference_size
@@ -47,7 +46,7 @@ public:
     using value_type = byte_type;
     using pointer = const byte_type*;
     using reference = byte_type;
-    using difference_type = unsigned char;
+    using difference_type = char;
 
     using int_type = char;
     using traits_type = std::char_traits<int_type>;
@@ -232,25 +231,23 @@ public:
 
 private:
     using byte_type = std::byte;
-    using array_type = std::vector<char_type>;
+    using array_type = std::array<char_type, buf_size>;
+    using size_type = std::size_t;
 
 public:
     ostreambyte_iterator(streambuf_type* streambuf) noexcept
-        : m_failure{false}, m_streambuf{streambuf}, m_buf{}
-    { 
-        m_buf.reserve(buf_size);
-    }
+        : m_failure{false}, m_streambuf{streambuf}, m_buf_pos{0}, m_buf{}
+    { }
 
     ostreambyte_iterator(ostream_type& stream) noexcept
         : ostreambyte_iterator{stream.rdbuf()}
     { }
 
     ostreambyte_iterator(const ostreambyte_iterator& rhs)
-        : m_failure{rhs.m_failure}, m_streambuf{rhs.m_streambuf}, m_buf{}
+        : m_failure{rhs.m_failure}, m_streambuf{rhs.m_streambuf}, m_buf_pos{0}, m_buf{}
     {
-        m_buf.reserve(buf_size);
         const_cast<ostreambyte_iterator&>(rhs)._commit();
-        const_cast<ostreambyte_iterator&>(rhs).m_buf.clear();
+        const_cast<ostreambyte_iterator&>(rhs)._clear_buffer();
     }
 
     ~ostreambyte_iterator() {
@@ -285,26 +282,39 @@ public:
 
 private:
     bool _commit() {
-        return m_buf.empty() || m_streambuf->sputn(m_buf.data(), m_buf.size()) == static_cast<std::streamsize>(m_buf.size());
+        std::streamsize current_size = static_cast<std::streamsize>(_buf_size());
+        return m_streambuf->sputn(m_buf.data(), current_size) == current_size;
     }
 
     char_type _put(char_type c) {
-        m_buf.push_back(c);
+        m_buf[m_buf_pos] = c;
+        ++m_buf_pos;
 
-        if (m_buf.size() == buf_size) {
+        if (_buf_size() == buf_size) {
             if (!_commit()) {
                 c = static_cast<char_type>(traits_type::eof());
             }
 
-            m_buf.clear();
+            _clear_buffer();
         }
 
         return c;
     }
 
+    constexpr
+    void _clear_buffer() noexcept {
+        m_buf_pos = 0;
+    }
+
+    [[nodiscard]] constexpr
+    size_type _buf_size() const noexcept {
+        return m_buf_pos;
+    }
+
 private:
     bool m_failure;
     streambuf_type* m_streambuf;
+    size_type m_buf_pos;
     array_type m_buf;
 };
 
