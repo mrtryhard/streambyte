@@ -2,3 +2,7 @@
 a.out
 benchmark_clang
 benchmark_gcc
+benchmark
+test
+.vscode
+.out

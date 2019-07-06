@@ -40,10 +40,11 @@ static constexpr const int g_bytes_count = 500'000;
 static
 void print_abstract() {
     std::cout << "This utility tests against:\r\n\t"
-        << "- i/ostreambuf_iterator<char>\r\n\t"
-        << "- i/ostreambyte_iterator<64>\r\n\t"
         << "- i/ostream_iterator<char>\r\n\t"
+        << "- i/ostreambuf_iterator<char>\r\n\t"
         << "- i/ostreambyte_iterator<32>\r\n\t"
+        << "- i/ostreambyte_iterator<64>\r\n\t"
+        << "- i/ostreambyte_iterator<128>\r\n\t"
         << "- i/ostreambyte_iterator<256>\r\n\t"
         << "- i/ostreambyte_iterator<512>\r\n\t"
         << "- i/ostreambyte_iterator<1024>\r\n"

@@ -54,7 +54,7 @@ public:
     using istream_type = std::basic_istream<int_type, traits_type>;
 
 private:
-    using buf_pos_type = std::size_t;
+    using size_type = std::size_t;
     using array_type = std::array<int_type, buf_size>;
 
 private:
@@ -67,13 +67,13 @@ private:
 
     private:
         friend istreambyte_iterator;
-        istreambyte_proxy(buf_pos_type to_read, buf_pos_type buf_pos, 
-            const array_type& buf, streambuf_type* streambuf) noexcept
+        istreambyte_proxy(size_type to_read, size_type buf_pos, 
+            array_type& buf, streambuf_type* streambuf) noexcept
             : m_to_read{to_read}, m_buf_pos{buf_pos}, m_streambuf{streambuf}, m_buf{buf}
         { }
         
-        buf_pos_type m_to_read;
-        buf_pos_type m_buf_pos;
+        size_type m_to_read;
+        size_type m_buf_pos;
         streambuf_type* m_streambuf;
         array_type& m_buf;
     };
@@ -81,7 +81,7 @@ private:
 public:
     constexpr
     istreambyte_iterator() noexcept
-        : m_value_valid{false}, m_to_read{0}, m_buf_pos{0}, m_streambuf{nullptr}, m_buf{0}
+        : m_to_read{0}, m_buf_pos{0}, m_streambuf{nullptr}, m_buf{0}
     { }
 
     istreambyte_iterator(istream_type& stream)
@@ -89,7 +89,7 @@ public:
     { }
 
     istreambyte_iterator(streambuf_type* sb)
-        :  m_value_valid{false}, m_to_read{0}, m_buf_pos{0}, m_streambuf{sb}, m_buf{0}
+        : m_to_read{0}, m_buf_pos{0}, m_streambuf{sb}, m_buf{0}
     { 
         if (m_streambuf) {
             _read_block();
@@ -97,16 +97,12 @@ public:
     }
 
     istreambyte_iterator(const istreambyte_proxy& proxy) noexcept
-        : m_value_valid{proxy.m_streambuf == nullptr}, m_to_read{proxy.m_to_read}, m_buf_pos{proxy.m_buf_pos}, m_streambuf{proxy.m_streambuf}
+        : m_to_read{proxy.m_to_read}, m_buf_pos{proxy.m_buf_pos}, m_streambuf{proxy.m_streambuf}
     { }
 
 public:
-    [[nodiscard]]
+    [[nodiscard]] constexpr
     byte_type operator*() const {
-        if (!m_value_valid) {
-            _peek();
-        }
-
         return _value();
     }
 
@@ -117,25 +113,16 @@ public:
     }
 
     istreambyte_proxy operator++(int) {
-        if (!m_value_valid) {
-            _peek();
-        }
-
-        istreambyte_proxy tmp{ --m_to_read, m_buf_pos, m_buf,  m_streambuf };
+        istreambyte_proxy tmp{ --m_to_read, m_buf_pos, m_buf, m_streambuf };
         ++*this;
 
         return tmp;
     }
 
     [[nodiscard]]
-    bool equal(const istreambyte_iterator& lrs) const {	
-        if (!m_value_valid)
-            _peek();
-
-        if (!lrs.m_value_valid)
-            lrs._peek();
-
-        return (m_to_read == 0 && m_streambuf == nullptr && lrs.m_streambuf == nullptr) 
+    bool equal(const istreambyte_iterator& lrs) const {
+        // both streambuf null = finished reading blocks; + none left to read = finished.
+        return (m_streambuf == nullptr && m_to_read == 0 && lrs.m_streambuf == nullptr) 
             || (m_streambuf != nullptr && lrs.m_streambuf != nullptr);
     }
 
@@ -154,7 +141,7 @@ private:
 
     // Equivalent to sbumpc but for a block.
     [[nodiscard]]
-    int_type _bump() {
+    int_type _bump() const {
         ++m_buf_pos;
         --m_to_read;
 
@@ -168,33 +155,21 @@ private:
     void _increment() {	
         if ( (m_streambuf == nullptr && m_to_read == 0) || traits_type::eq_int_type(traits_type::eof(), _bump())) {
             m_streambuf = nullptr;
-            m_value_valid = true;
-        } else {
-            m_value_valid = false;
         }
-    }
-
-    void _peek() const noexcept {
-        if ( (m_streambuf == nullptr && m_to_read == 0) || traits_type::eq_int_type(traits_type::eof(), _current())) {
-            m_streambuf = nullptr;
-        }
-        
-        m_value_valid = true;
     }
 
     void _read_block() const {
         m_buf_pos = 0;
-        m_to_read = static_cast<buf_pos_type>(m_streambuf->sgetn(m_buf.data(), buf_size));
-        
+        m_to_read = static_cast<size_type>(m_streambuf->sgetn(m_buf.data(), buf_size));
+
         if (m_to_read < buf_size) {
             m_streambuf = nullptr;
         }
     }
 
 private:
-    mutable bool m_value_valid;
-    mutable buf_pos_type m_to_read;
-    mutable buf_pos_type m_buf_pos;
+    mutable size_type m_to_read;
+    mutable size_type m_buf_pos;
     mutable streambuf_type* m_streambuf;
     mutable array_type m_buf;
 };
