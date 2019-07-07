@@ -29,6 +29,8 @@
 #include <string_view>
 #include <vector>
 
+#define expect(x, y) expect_impl(x, y, __LINE__)
+
 static int g_final_result = 0;
 
 constexpr const auto MAX_BYTES = 50;
@@ -45,7 +47,7 @@ std::vector<std::byte> get_expected() {
 }
 
 static
-void expect(bool expression, std::string_view error_msg, int line = __LINE__) {
+void expect_impl(bool expression, std::string_view error_msg, int line) {
     if (!expression) {
         std::cerr << "Failure at line " << line << ":\r\n\t" << error_msg << std::endl;
         ++g_final_result;
