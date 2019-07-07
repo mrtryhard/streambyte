@@ -100,9 +100,8 @@ int main() {
         ss << "012345674444234567890";
         const std::string expected_bytes = ss.str();
 
-        std::vector<std::byte> resulting_bytes(mrt::istreambyte_iterator<>{ss},
-            mrt::istreambyte_iterator<>{});
-        
+        std::vector<std::byte> resulting_bytes(mrt::istreambyte_iterator<>{ss}, mrt::istreambyte_iterator<>{});
+
         auto are_equals = std::equal(
             std::begin(expected_bytes), std::end(expected_bytes),
             std::begin(resulting_bytes), std::end(resulting_bytes), 
@@ -111,6 +110,43 @@ int main() {
             }
         );
 
+        expect(resulting_bytes.size() == expected_bytes.size(), "istreambyte_iterator: Expected result do not match length.");
+        expect(are_equals, "istreambyte_iterator: Expected results mismatch.");
+
+        status();
+    }
+
+    // Case 3: istreambyte_iterator with count of elements (e.g. copy_n)
+    //         Since istreambyte uses a buffer, if you copy_n(6), you'll still read up to buf_size bytes internally.
+    //         You need to restore those bytes on iterator death.
+    {
+        // Setup
+        std::cout << "istreambyte_iterator: lower than buffer length count usage\r\n";
+        const std::size_t expected_count = 6;
+        std::stringstream ss;
+        ss << "012345674444234567890";
+
+        std::vector<std::byte> resulting_bytes;
+        std::string expected_bytes;
+        expected_bytes.reserve(expected_count);
+        resulting_bytes.reserve(expected_count);
+
+        // Fill buffers.
+        std::copy_n(std::istreambuf_iterator(ss), expected_count, std::back_inserter(expected_bytes));
+        ss.seekg(0);
+
+        std::copy_n(mrt::istreambyte_iterator<>{ss}, expected_count, std::back_inserter(resulting_bytes));
+        const auto seek_position = ss.tellg();
+
+        auto are_equals = std::equal(
+            std::begin(expected_bytes), std::end(expected_bytes),
+            std::begin(resulting_bytes), std::end(resulting_bytes),
+            [](const char& left, const std::byte& right) {
+                return left == static_cast<int>(right);
+            }
+        );
+
+        expect(seek_position == expected_count, "Stream seek position should've been restored to right position.");
         expect(resulting_bytes.size() == expected_bytes.size(), "istreambyte_iterator: Expected result do not match length.");
         expect(are_equals, "istreambyte_iterator: Expected results mismatch.");
 
